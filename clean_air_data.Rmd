@@ -1,0 +1,248 @@
+---
+title: "Project 2: Air Pollution Data Analysis"
+author: "Arya Nair"
+output: word_document
+date: "`r Sys.Date()`"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# libraries
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+library(wesanderson)
+library(gt)
+library(tidyr)
+```
+
+
+```{r process_pollution_data, echo = FALSE}
+
+# function that takes input dataset, cleans it, and calculates user pref (ppb)
+
+# inputs for function: file path and o3 units
+# output for function: clean tibble with single row per day
+
+process_pollution_data <- function(file_path, o3_units = "ppm"){
+  air_data <- read.csv(file_path) |> 
+    as_tibble() |> 
+    
+    # format date
+    mutate(Date = mdy(Date))
+    
+     # loop through pollutants and set negative to 0
+  
+  pollutants <- c("Daily.Max.8.hour.CO.Concentration", "Daily.Mean.PM2.5.Concentration", "Daily.Max.8.hour.Ozone.Concentration")
+  
+  for (i in pollutants){
+    air_data[[i]] <- ifelse(air_data[[i]]<0, 0, air_data[[i]])}
+  
+    # for duplicate measurements, calculate daily average
+  air_data <- air_data |> 
+  group_by(Date) |> 
+    summarise(
+      co = mean(Daily.Max.8.hour.CO.Concentration, na.rm = TRUE),
+      units_co = first(units_CO),
+      pm25 = mean(Daily.Mean.PM2.5.Concentration, na.rm = TRUE),
+      units_pm = first(units_PM),
+      o3 = mean(Daily.Max.8.hour.Ozone.Concentration, na.rm = TRUE),
+      units_o3 = first(units_O3),
+      .groups = "drop")
+  
+  # remove duplicate rows
+  air_data <- air_data |> 
+    distinct()
+  
+  # choosing ppm or ppb
+  if (o3_units == "ppb"){
+    air_data$o3 <- (air_data$o3)*1000
+    air_data$units_o3 <- "ppb"
+  }
+  return(air_data)
+}
+
+air2018 <- process_pollution_data("data/AQ_2018.csv", o3_units = "ppm")
+air2019 <- process_pollution_data("data/AQ_2019.csv", o3_units = "ppm")
+air2020 <- process_pollution_data("data/AQ_2020.csv", o3_units = "ppm")
+
+# combining into a single data set
+air_3years <- rbind(air2018, air2019, air2020)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r tables, echo=FALSE}
+
+# tables include max and min of each pollutant
+
+# 2018
+air2018_summary <- data.frame(
+  Pollutant = c("CO (ppm)", "PM2.5 (ppm)", "O3 (ppm)"),
+  Minimum = c(
+    minco = round(min(air2018$co, na.rm = T),3),
+    minpm25 = round(min(air2018$pm25, na.rm = T),3),
+    mino3 = round(min(air2018$o3, na.rm = T),3)),
+  Maximum = c(
+    maxco = round(max(air2018$co, na.rm = T),3),
+    maxpm25 = round(max(air2018$pm25, na.rm = T),3),
+    maxo3 = round(max(air2018$o3, na.rm = T),3)))
+air2018_summary |> 
+  gt() |> 
+  tab_header("Air Quality Summary for 2018") |> 
+  tab_caption("Minimum and Maximum Values for Pollutants")
+
+# 2019
+air2019_summary <- data.frame(
+  Pollutant = c("CO (ppm)", "PM2.5 (ppm)", "O3 (ppm)"),
+  Minimum = c(
+    minco = min(air2019$co, na.rm = T),
+    minpm25 = min(air2019$pm25, na.rm = T),
+    mino3 = min(air2019$o3, na.rm = T)),
+  Maximum = c(
+    maxco = max(air2019$co, na.rm = T),
+    maxpm25 = max(air2019$pm25, na.rm = T),
+    maxo3 = max(air2019$o3, na.rm = T)))
+air2019_summary |> 
+  gt() |> 
+  tab_header("Air Quality Summary for 2019") |> 
+  tab_caption("Minimum and Maximum Values for Pollutants") |> 
+  fmt_number(
+    decimals = 3
+  )
+
+# 2020
+air2020_summary <- data.frame(
+  Pollutant = c("CO (ppm)", "PM2.5 (ppm)", "O3 (ppm)"),
+  Minimum = c(
+    minco = min(air2020$co, na.rm = T),
+    minpm25 = min(air2020$pm25, na.rm = T),
+    mino3 = min(air2020$o3, na.rm = T)),
+  Maximum = c(
+    maxco = max(air2020$co, na.rm = T),
+    maxpm25 = max(air2020$pm25, na.rm = T),
+    maxo3 = max(air2020$o3, na.rm = T)))
+air2020_summary |> 
+  gt() |> 
+  tab_header("Air Quality Summary for 2020") |> 
+  tab_caption("Minimum and Maximum Values for Pollutants") |> 
+  fmt_number(
+    decimals = 3
+  )
+
+```
+
+# Plot 1: Monthly Average Co and O3 Concentration fro 2018 - 2020
+
+```{r graphs, echo= FALSE}
+# average across the three years 
+air_3years <- air_3years |> 
+  mutate(
+    month = month(Date, label = TRUE, abbr = TRUE),
+    o3_10ppm = o3*10
+  )
+
+month_sum <- air_3years |> 
+  group_by(month) |> 
+  summarise(mean_co = mean(co, na.rm = TRUE),
+            mean_o3 = mean(o3_10ppm, na.rm = TRUE),
+            sd_co = sd(co, na.rm = TRUE),
+            sd_o3 = sd(o3_10ppm, na.rm = TRUE),
+            n_co = sum(!is.na(co)),
+            n_o3 = sum(!is.na(o3)),
+            lower_co = mean_co - 1.96*(sd_co/sqrt(n_co)),
+            upper_co = mean_co + 1.96*(sd_co/sqrt(n_co)),
+            lower_o3 = mean_o3 - 1.96*(sd_o3/sqrt(n_o3)),
+            upper_o3 = mean_o3 + 1.96*(sd_o3/sqrt(n_o3)),
+            .groups = "drop")
+month_sum <- month_sum |> 
+  select(month, mean_co, mean_o3, lower_co, upper_co, lower_o3, upper_o3)
+  
+month_plot <- ggplot(data = month_sum,
+                     aes(x = month)) +
+  geom_point(
+    aes(
+      y = mean_co, color = "CO, in ppm")) +
+  geom_errorbar(aes(
+    y = mean_co,
+    ymin = lower_co,
+    ymax = upper_co,
+    color = "CO, in ppm")) +
+  geom_point(aes(
+    y = mean_o3, color = "O3, per 10 ppm")) +
+  geom_errorbar(aes(
+    y = (mean_o3),
+    ymin = (lower_o3),
+    ymax = (upper_o3),
+    color = "O3, per 10 ppm"
+  ))
+
+month_plot +
+  labs(
+    x = "Month",
+    y = "Mean Concentration of Pollutants",
+    color = "Pollutants"
+  ) +
+  theme_bw()+
+  scale_color_manual(
+    values = wes_palette("Darjeeling1", 2)
+  )
+```
+
+To best scale the pollutants so that the true relationship between the month and mean concentration is seen for both pollutants, I multiplied the O3 pollutant by 10, meaning that the unit is not 10 ppm (parts per million). This allows the width of each confidence interval to be seen on in the same level as CO, which is measured in ppm.
+
+## Plot 2: PM 2.5 by Month from 2018 - 2020
+
+```{r plot2, echo = FALSE}
+
+air_3years <- air_3years |> 
+  mutate(year_pm = year(Date))
+
+p25_sum <- air_3years |> 
+  group_by(year_pm,month) |> 
+  summarise(mean_p25 = mean(pm25, na.rm = TRUE),
+         .groups = "drop")
+Year <- factor(p25_sum$year_pm)
+p25_plot <- ggplot(data = p25_sum,
+                   aes(x = month,
+                       y = mean_p25,
+                       group = Year,
+                       color = Year))
+p25_plot +
+  geom_point() +
+  geom_line() +
+  labs(
+    x = "Month",
+    y = "Average PM2.5"
+  ) +
+  scale_color_manual(
+    values = wes_palette("Darjeeling1", 3)
+  )
+
+```
+
+To best display the data, I used a line plot, so that the pattern over the months can be clearly seen by the line, and I am able to add different lines to represent the 3 different years.
+
+## Interpretation of Data
+
+From the yearly air quality summary tables, PM 2.5 exhibited a large range of values, ranging from about 0 to 30 ug/m^3 over the years, while CO and O3 have much narrower ranges, which CO ranging from approximately 0.1 to 1.3 ppm, and O3 ranging from approximately 0.01 to 0.068 ppm. 
+
+Plot 1 displays the monthly average of CO and O3 over the three years, and we can see an inverse pattern between the two pollutants depending on the season, for example, O3 is the highest during the summer months (maximum occurs in June), and lowest in the winter months, while CO is highest during the winter months (maximum occurs in December), and lowest in the summer months.
+
+Plot 2 displays the average monthly concentration of PM 2.5 for the years 2018 to 2020 (up until April), and no clear seasonal or yearly pattern is seen.
+
+## AI Statement
+
+In this project, I used AI (Microsoft CoPilot) to help me with syntax and troubleshooting errors, specifically with the function writing to import the three datasets for cleaning. AI specifically helped me write the for loop to change all pollutant values that were less than 0 to 0, helping me set up a way to loop through all three pollutants in one loop. AI also helped me with syntax for specifying the colors or labels for my tables and plots. I checked the output of AI by running my code, comparing it with what the project required, and changing some of the specifications within the code to confirm that I saw the change that I expected to see. 
+
+## GitHub Repository
+
+The files and code for this project are available here:
+
+https://github.com/narya99/biostat721-project2-airpollutiondata.git
+
+
+
