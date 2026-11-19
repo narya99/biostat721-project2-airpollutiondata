@@ -2,7 +2,7 @@
 
 Project 2: Air Pollution Analysis
 
-Analyzing three air pollutants (CO, PM2.5, and O3) across the years of 2018 - 2020 in Durham Country, North Carolina.
+Analyzing three air pollutants (CO, PM2.5, and O3) across the years of 2018 - 2020 in Durham County, North Carolina.
 
 Data Source: Air pollution data from the EPA monitor at the RDU airport.
 
