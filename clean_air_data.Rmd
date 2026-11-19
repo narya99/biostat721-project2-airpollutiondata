@@ -71,9 +71,7 @@ air2020 <- process_pollution_data("data/AQ_2020.csv", o3_units = "ppm")
 air_3years <- rbind(air2018, air2019, air2020)
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
+## Summary Tables for Pollutants for 2018 - 2020
 
 ```{r tables, echo=FALSE}
 
