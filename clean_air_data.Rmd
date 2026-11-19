@@ -17,48 +17,50 @@ library(tidyr)
 ```
 
 ```{r process_pollution_data, echo = FALSE}
-
 # function that takes input dataset, cleans it, and calculates user pref (ppb)
 
 # inputs for function: file path and o3 units
 # output for function: clean tibble with single row per day
 
-process_pollution_data <- function(file_path, o3_units = "ppm"){
-  air_data <- read.csv(file_path) |> 
-    as_tibble() |> 
-    
+process_pollution_data <- function(file_path, o3_units = "ppm") {
+  air_data <- read.csv(file_path) |>
+    as_tibble() |>
     # format date
     mutate(Date = mdy(Date))
-    
-     # loop through pollutants and set negative to 0
-  
-  pollutants <- c("Daily.Max.8.hour.CO.Concentration", "Daily.Mean.PM2.5.Concentration", "Daily.Max.8.hour.Ozone.Concentration")
-  
-  for (i in pollutants){
-    air_data[[i]] <- ifelse(air_data[[i]]<0, 0, air_data[[i]])}
-  
-    # for duplicate measurements, calculate daily average
-  air_data <- air_data |> 
-  group_by(Date) |> 
+
+  # loop through pollutants and set negative to 0
+
+  pollutants <- c("Daily.Max.8.hour.CO.Concentration",
+                  "Daily.Mean.PM2.5.Concentration",
+                  "Daily.Max.8.hour.Ozone.Concentration")
+
+  for (i in pollutants) {
+    air_data[[i]] <- ifelse(air_data[[i]] < 0, 0, air_data[[i]])
+  }
+
+  # for duplicate measurements, calculate daily average
+  air_data <- air_data |>
+    group_by(Date) |>
     summarise(
-      co = mean(Daily.Max.8.hour.CO.Concentration, na.rm = TRUE),
-      units_co = first(units_CO),
-      pm25 = mean(Daily.Mean.PM2.5.Concentration, na.rm = TRUE),
-      units_pm = first(units_PM),
-      o3 = mean(Daily.Max.8.hour.Ozone.Concentration, na.rm = TRUE),
-      units_o3 = first(units_O3),
-      .groups = "drop")
-  
+      co = mean(.data$Daily.Max.8.hour.CO.Concentration, na.rm = TRUE),
+      units_co = first(.data$units_CO),
+      pm25 = mean(.data$Daily.Mean.PM2.5.Concentration, na.rm = TRUE),
+      units_pm = first(.data$units_PM),
+      o3 = mean(.data$Daily.Max.8.hour.Ozone.Concentration, na.rm = TRUE),
+      units_o3 = first(.data$units_O3),
+      .groups = "drop"
+    )
+
   # remove duplicate rows
-  air_data <- air_data |> 
+  air_data <- air_data |>
     distinct()
-  
+
   # choosing ppm or ppb
-  if (o3_units == "ppb"){
-    air_data$o3 <- (air_data$o3)*1000
+  if (o3_units == "ppb") {
+    air_data$o3 <- (air_data$o3) * 1000
     air_data$units_o3 <- "ppb"
   }
-  return(air_data)
+  air_data
 }
 
 air2018 <- process_pollution_data("data/AQ_2018.csv", o3_units = "ppm")
@@ -72,40 +74,45 @@ air_3years <- rbind(air2018, air2019, air2020)
 ## Summary Tables for Pollutants for 2018 - 2020
 
 ```{r tables, echo=FALSE}
-
 # tables include max and min of each pollutant
 
 # 2018
 air2018_summary <- data.frame(
   Pollutant = c("CO (ppm)", "PM2.5 (ug/m^3)", "O3 (ppm)"),
   Minimum = c(
-    minco = round(min(air2018$co, na.rm = T),3),
-    minpm25 = round(min(air2018$pm25, na.rm = T),3),
-    mino3 = round(min(air2018$o3, na.rm = T),3)),
+    minco = round(min(air2018$co, na.rm = TRUE), 3),
+    minpm25 = round(min(air2018$pm25, na.rm = TRUE), 3),
+    mino3 = round(min(air2018$o3, na.rm = TRUE), 3)
+  ),
   Maximum = c(
-    maxco = round(max(air2018$co, na.rm = T),3),
-    maxpm25 = round(max(air2018$pm25, na.rm = T),3),
-    maxo3 = round(max(air2018$o3, na.rm = T),3)))
-air2018_summary |> 
-  gt() |> 
-  tab_header("Air Quality Summary for 2018") |> 
+    maxco = round(max(air2018$co, na.rm = TRUE), 3),
+    maxpm25 = round(max(air2018$pm25, na.rm = TRUE), 3),
+    maxo3 = round(max(air2018$o3, na.rm = TRUE), 3)
+  )
+)
+air2018_summary |>
+  gt() |>
+  tab_header("Air Quality Summary for 2018") |>
   tab_caption("Minimum and Maximum Values for Pollutants")
 
 # 2019
 air2019_summary <- data.frame(
   Pollutant = c("CO (ppm)", "PM2.5 (ug/m^3)", "O3 (ppm)"),
   Minimum = c(
-    minco = min(air2019$co, na.rm = T),
-    minpm25 = min(air2019$pm25, na.rm = T),
-    mino3 = min(air2019$o3, na.rm = T)),
+    minco = min(air2019$co, na.rm = TRUE),
+    minpm25 = min(air2019$pm25, na.rm = TRUE),
+    mino3 = min(air2019$o3, na.rm = TRUE)
+  ),
   Maximum = c(
-    maxco = max(air2019$co, na.rm = T),
-    maxpm25 = max(air2019$pm25, na.rm = T),
-    maxo3 = max(air2019$o3, na.rm = T)))
-air2019_summary |> 
-  gt() |> 
-  tab_header("Air Quality Summary for 2019") |> 
-  tab_caption("Minimum and Maximum Values for Pollutants") |> 
+    maxco = max(air2019$co, na.rm = TRUE),
+    maxpm25 = max(air2019$pm25, na.rm = TRUE),
+    maxo3 = max(air2019$o3, na.rm = TRUE)
+  )
+)
+air2019_summary |>
+  gt() |>
+  tab_header("Air Quality Summary for 2019") |>
+  tab_caption("Minimum and Maximum Values for Pollutants") |>
   fmt_number(
     decimals = 3
   )
@@ -114,61 +121,71 @@ air2019_summary |>
 air2020_summary <- data.frame(
   Pollutant = c("CO (ppm)", "PM2.5 (ug/m^3)", "O3 (ppm)"),
   Minimum = c(
-    minco = min(air2020$co, na.rm = T),
-    minpm25 = min(air2020$pm25, na.rm = T),
-    mino3 = min(air2020$o3, na.rm = T)),
+    minco = min(air2020$co, na.rm = TRUE),
+    minpm25 = min(air2020$pm25, na.rm = TRUE),
+    mino3 = min(air2020$o3, na.rm = TRUE)
+  ),
   Maximum = c(
-    maxco = max(air2020$co, na.rm = T),
-    maxpm25 = max(air2020$pm25, na.rm = T),
-    maxo3 = max(air2020$o3, na.rm = T)))
-air2020_summary |> 
-  gt() |> 
-  tab_header("Air Quality Summary for 2020") |> 
-  tab_caption("Minimum and Maximum Values for Pollutants") |> 
+    maxco = max(air2020$co, na.rm = TRUE),
+    maxpm25 = max(air2020$pm25, na.rm = TRUE),
+    maxo3 = max(air2020$o3, na.rm = TRUE)
+  )
+)
+air2020_summary |>
+  gt() |>
+  tab_header("Air Quality Summary for 2020") |>
+  tab_caption("Minimum and Maximum Values for Pollutants") |>
   fmt_number(
     decimals = 3
   )
-
 ```
 
 # Plot 1: Monthly Average Co and O3 Concentration for 2018 - 2020
 
 ```{r graphs, echo= FALSE}
-# average across the three years 
-air_3years <- air_3years |> 
+# average across the three years
+air_3years <- air_3years |>
   mutate(
     month = month(Date, label = TRUE, abbr = TRUE),
-    o3_10ppm = o3*10
+    o3_10ppm = o3 * 10
   )
 
-month_sum <- air_3years |> 
-  group_by(month) |> 
-  summarise(mean_co = mean(co, na.rm = TRUE),
-            mean_o3 = mean(o3_10ppm, na.rm = TRUE),
-            sd_co = sd(co, na.rm = TRUE),
-            sd_o3 = sd(o3_10ppm, na.rm = TRUE),
-            n_co = sum(!is.na(co)),
-            n_o3 = sum(!is.na(o3)),
-            lower_co = mean_co - 1.96*(sd_co/sqrt(n_co)),
-            upper_co = mean_co + 1.96*(sd_co/sqrt(n_co)),
-            lower_o3 = mean_o3 - 1.96*(sd_o3/sqrt(n_o3)),
-            upper_o3 = mean_o3 + 1.96*(sd_o3/sqrt(n_o3)),
-            .groups = "drop")
-month_sum <- month_sum |> 
+month_sum <- air_3years |>
+  group_by(month) |>
+  summarise(
+    mean_co = mean(co, na.rm = TRUE),
+    mean_o3 = mean(o3_10ppm, na.rm = TRUE),
+    sd_co = sd(co, na.rm = TRUE),
+    sd_o3 = sd(o3_10ppm, na.rm = TRUE),
+    n_co = sum(!is.na(co)),
+    n_o3 = sum(!is.na(o3)),
+    lower_co = mean_co - 1.96 * (sd_co / sqrt(n_co)),
+    upper_co = mean_co + 1.96 * (sd_co / sqrt(n_co)),
+    lower_o3 = mean_o3 - 1.96 * (sd_o3 / sqrt(n_o3)),
+    upper_o3 = mean_o3 + 1.96 * (sd_o3 / sqrt(n_o3)),
+    .groups = "drop"
+  )
+month_sum <- month_sum |>
   select(month, mean_co, mean_o3, lower_co, upper_co, lower_o3, upper_o3)
-  
-month_plot <- ggplot(data = month_sum,
-                     aes(x = month)) +
+
+month_plot <- ggplot(
+  data = month_sum,
+  aes(x = month)
+) +
   geom_point(
     aes(
-      y = mean_co, color = "CO, in ppm")) +
+      y = mean_co, color = "CO, in ppm"
+    )
+  ) +
   geom_errorbar(aes(
     y = mean_co,
     ymin = lower_co,
     ymax = upper_co,
-    color = "CO, in ppm")) +
+    color = "CO, in ppm"
+  )) +
   geom_point(aes(
-    y = mean_o3, color = "O3, per 10 ppm")) +
+    y = mean_o3, color = "O3, per 10 ppm"
+  )) +
   geom_errorbar(aes(
     y = (mean_o3),
     ymin = (lower_o3),
@@ -182,7 +199,7 @@ month_plot +
     y = "Mean Concentration of Pollutants",
     color = "Pollutants"
   ) +
-  theme_bw()+
+  theme_bw() +
   scale_color_manual(
     values = wes_palette("Darjeeling1", 2)
   )
@@ -194,20 +211,25 @@ To best scale the pollutants so that the true relationship between the month and
 ## Plot 2: PM 2.5 by Month from 2018 - 2020
 
 ```{r plot2, echo = FALSE}
-
-air_3years <- air_3years |> 
+air_3years <- air_3years |>
   mutate(year_pm = year(Date))
 
-p25_sum <- air_3years |> 
-  group_by(year_pm,month) |> 
-  summarise(mean_p25 = mean(pm25, na.rm = TRUE),
-         .groups = "drop")
+p25_sum <- air_3years |>
+  group_by(year_pm, month) |>
+  summarise(
+    mean_p25 = mean(pm25, na.rm = TRUE),
+    .groups = "drop"
+  )
 Year <- factor(p25_sum$year_pm)
-p25_plot <- ggplot(data = p25_sum,
-                   aes(x = month,
-                       y = mean_p25,
-                       group = Year,
-                       color = Year))
+p25_plot <- ggplot(
+  data = p25_sum,
+  aes(
+    x = month,
+    y = mean_p25,
+    group = Year,
+    color = Year
+  )
+)
 p25_plot +
   geom_point() +
   geom_line() +
@@ -217,9 +239,8 @@ p25_plot +
   ) +
   scale_color_manual(
     values = wes_palette("Darjeeling1", 3)
-  )+
+  ) +
   theme_bw()
-
 ```
 
 To best display the data, I used a line plot, so that the pattern over the months can be clearly seen by the line, and I am able to add different lines to represent the 3 different years.
