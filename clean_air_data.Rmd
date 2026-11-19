@@ -4,7 +4,6 @@ author: "Arya Nair"
 output: word_document
 date: "`r Sys.Date()`"
 ---
-
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
@@ -16,7 +15,6 @@ library(wesanderson)
 library(gt)
 library(tidyr)
 ```
-
 
 ```{r process_pollution_data, echo = FALSE}
 
@@ -70,7 +68,6 @@ air2020 <- process_pollution_data("data/AQ_2020.csv", o3_units = "ppm")
 # combining into a single data set
 air_3years <- rbind(air2018, air2019, air2020)
 ```
-
 
 ## Summary Tables for Pollutants for 2018 - 2020
 
@@ -134,7 +131,7 @@ air2020_summary |>
 
 ```
 
-# Plot 1: Monthly Average Co and O3 Concentration fro 2018 - 2020
+# Plot 1: Monthly Average Co and O3 Concentration for 2018 - 2020
 
 ```{r graphs, echo= FALSE}
 # average across the three years 
@@ -235,7 +232,6 @@ From the yearly air quality summary tables, PM 2.5 exhibited a large range of va
 Plot 1 displays the monthly average of CO and O3 over the three years, and we can see an inverse pattern between the two pollutants depending on the season, for example, O3 is the highest during the summer months (maximum occurs in June), and lowest in the winter months, while CO is highest during the winter months (maximum occurs in December), and lowest in the summer months.
 
 Plot 2 displays the average monthly concentration of PM 2.5 for the years 2018 to 2020 (up until April), and no clear seasonal or yearly pattern is seen.
-
 
 ## AI Statement
 
