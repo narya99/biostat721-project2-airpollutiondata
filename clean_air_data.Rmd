@@ -71,6 +71,7 @@ air2020 <- process_pollution_data("data/AQ_2020.csv", o3_units = "ppm")
 air_3years <- rbind(air2018, air2019, air2020)
 ```
 
+
 ## Summary Tables for Pollutants for 2018 - 2020
 
 ```{r tables, echo=FALSE}
@@ -79,7 +80,7 @@ air_3years <- rbind(air2018, air2019, air2020)
 
 # 2018
 air2018_summary <- data.frame(
-  Pollutant = c("CO (ppm)", "PM2.5 (ppm)", "O3 (ppm)"),
+  Pollutant = c("CO (ppm)", "PM2.5 (ug/m^3)", "O3 (ppm)"),
   Minimum = c(
     minco = round(min(air2018$co, na.rm = T),3),
     minpm25 = round(min(air2018$pm25, na.rm = T),3),
@@ -95,7 +96,7 @@ air2018_summary |>
 
 # 2019
 air2019_summary <- data.frame(
-  Pollutant = c("CO (ppm)", "PM2.5 (ppm)", "O3 (ppm)"),
+  Pollutant = c("CO (ppm)", "PM2.5 (ug/m^3)", "O3 (ppm)"),
   Minimum = c(
     minco = min(air2019$co, na.rm = T),
     minpm25 = min(air2019$pm25, na.rm = T),
@@ -114,7 +115,7 @@ air2019_summary |>
 
 # 2020
 air2020_summary <- data.frame(
-  Pollutant = c("CO (ppm)", "PM2.5 (ppm)", "O3 (ppm)"),
+  Pollutant = c("CO (ppm)", "PM2.5 (ug/m^3)", "O3 (ppm)"),
   Minimum = c(
     minco = min(air2020$co, na.rm = T),
     minpm25 = min(air2020$pm25, na.rm = T),
@@ -192,6 +193,7 @@ month_plot +
 
 To best scale the pollutants so that the true relationship between the month and mean concentration is seen for both pollutants, I multiplied the O3 pollutant by 10, meaning that the unit is not 10 ppm (parts per million). This allows the width of each confidence interval to be seen on in the same level as CO, which is measured in ppm.
 
+
 ## Plot 2: PM 2.5 by Month from 2018 - 2020
 
 ```{r plot2, echo = FALSE}
@@ -214,15 +216,17 @@ p25_plot +
   geom_line() +
   labs(
     x = "Month",
-    y = "Average PM2.5"
+    y = "Average PM2.5 (ug/m^3)"
   ) +
   scale_color_manual(
     values = wes_palette("Darjeeling1", 3)
-  )
+  )+
+  theme_bw()
 
 ```
 
 To best display the data, I used a line plot, so that the pattern over the months can be clearly seen by the line, and I am able to add different lines to represent the 3 different years.
+
 
 ## Interpretation of Data
 
@@ -232,9 +236,11 @@ Plot 1 displays the monthly average of CO and O3 over the three years, and we ca
 
 Plot 2 displays the average monthly concentration of PM 2.5 for the years 2018 to 2020 (up until April), and no clear seasonal or yearly pattern is seen.
 
+
 ## AI Statement
 
 In this project, I used AI (Microsoft CoPilot) to help me with syntax and troubleshooting errors, specifically with the function writing to import the three datasets for cleaning. AI specifically helped me write the for loop to change all pollutant values that were less than 0 to 0, helping me set up a way to loop through all three pollutants in one loop. AI also helped me with syntax for specifying the colors or labels for my tables and plots. I checked the output of AI by running my code, comparing it with what the project required, and changing some of the specifications within the code to confirm that I saw the change that I expected to see. 
+
 
 ## GitHub Repository
 
